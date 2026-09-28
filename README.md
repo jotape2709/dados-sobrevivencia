@@ -143,10 +143,6 @@ The project does not pre-write conclusions or hard-code expected outcomes. Once 
 2. **Which profile is associated with the observed registry event:** report Cox HR/IC95% and the PH diagnostic, or two-year OR/IC95% among mature records; call it an association with administrative baixa, state the reference group and avoid causal language.
 3. **Which sector profiles differ descriptively:** identify supported CNAE-division differences and report cluster stability/silhouette; do not label a small or weakly separated cluster as a predictive segment.
 
-## LinkedIn post
-
-A Portuguese copy-ready framework, intentionally containing no invented statistics, is in [`docs/linkedin-post-template.md`](docs/linkedin-post-template.md). Fill it only after `make analyze`, attach the generated sector survival figure, and include its snapshot month and the baixa-versus-falência caveat. Publishing is an external action and is not performed by this local project.
-
 ## Validation and known environment constraints
 
 The repository's automated unit tests cover archive-index parsing and the explicit no-partners rule; shell scripts and R sources are syntax-checked. End-to-end database load, statistical estimation, PDF output, and chart generation require the real full-size monthly dump. No real CNPJ snapshot was downloaded or processed for this delivery, so **there are currently no analytical chart images or an interactive dashboard in this repository**. The image above is an architecture diagram, not a data chart. Running `make analyze` on a real snapshot generates PNG plots under `output/figures/`; `make report` includes available plots in the PDF. No findings or placeholder charts have been fabricated.
