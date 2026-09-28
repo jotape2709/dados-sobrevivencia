@@ -18,11 +18,13 @@ The question is: **How long do micro and small businesses headquartered in the A
 | `sql/002_transform.sql` | Validates dates, maps Receita's municipality codes by normalized official name, and creates one record per CNPJ basic (head office). |
 | `R/01_analysis.R` | Exploratory summaries, data-quality checks, Kaplan–Meier, Cox, two-year logistic regression and CNAE-division clustering. |
 | `R/02_report.Rmd` | Portuguese report template rendered to PDF from actual generated tables and figures. |
+| `scripts/render_illustrative_charts.py` | Deterministically regenerates four explicitly synthetic visual mockups for README/layout preview only. |
+| `docs/illustrative/` | Synthetic chart mockups, kept outside real-data analysis outputs. |
 | `docs/methodology.md` | Cohort, outcome, censoring, estimands, data caveats and privacy choices. |
 | `docs/architecture.mmd` | Editable Mermaid pipeline diagram. |
 | `tests/` | Unit tests for archive discovery and selection rules; no fake business observations. |
 
-The project intentionally does **not** commit the multi-gigabyte source files, extracts, credentials, company-level exports, fabricated charts, or fabricated findings. It does not contain an interactive dashboard; this is a local analysis pipeline and PDF-report project, not a website.
+The project intentionally does **not** commit the multi-gigabyte source files, extracts, credentials, company-level exports or fabricated findings. It includes clearly labeled, synthetic **visual mockups only** under `docs/illustrative/`; they demonstrate possible chart styling and are not empirical results. They are separate from `output/figures/`, reserved for charts produced from real data. This is a local analysis pipeline and PDF-report project, not an interactive dashboard or website.
 
 ## Scope and statistical unit
 
@@ -107,9 +109,27 @@ After a complete real-data run, `output/tables/` contains data-quality counts, y
 
 ## Charts and dashboard status
 
-There is **no interactive dashboard** in this project. The analysis code is designed to create data plots after a genuine RFB snapshot has been downloaded, loaded and validated. No analytical charts were generated for this delivery because the full national source dump was not downloaded or processed; inserting chart images now would mean inventing or simulating results. The architecture diagram above is the only image currently embedded in this README, and it is not a statistical chart.
+There is **no interactive dashboard** in this project. The four charts below are visual mockups generated for this README from fixed, manually specified synthetic values. The script [`scripts/render_illustrative_charts.py`](scripts/render_illustrative_charts.py) reproduces them. Every image carries a prominent synthetic-data banner and a warning in its footer.
 
-After a real run, `make analyze` can create `output/figures/openings_closures_by_year.png`, `businesses_by_municipality.png`, Kaplan–Meier curves by MEI and CNAE division, and clustering diagnostics. Available figures are included automatically in `output/report.pdf` by `make report`. Only publish a chart with its snapshot month and the administrative-baixa caveat; never substitute an uncensored cross-sectional rate for a survival curve.
+> **Important:** these values were fabricated solely to demonstrate appearance and layout. They were **not** downloaded, sampled, or calculated from Receita Federal records. The annual values, municipality volumes, percentages, survival curves and sector profiles are not evidence, must not be interpreted as real trends, and must not be cited. **No real CNPJ snapshot has been analyzed, so there are no empirical charts yet.**
+
+### Annual openings and administrative baixa — visual mockup
+
+![Synthetic illustrative mockup of annual openings and administrative baixa, not Receita data](docs/illustrative/annual_openings_closures.png)
+
+### Administrative-registration survival — visual mockup
+
+![Synthetic Kaplan–Meier-style visual mockup, not estimated from real businesses](docs/illustrative/survival_by_sector.png)
+
+### Municipality comparison — visual mockup
+
+![Synthetic illustrative mockup comparing fictional municipality volumes and shares](docs/illustrative/municipality_comparison.png)
+
+### Sector-profile heatmap — visual mockup
+
+![Synthetic illustrative heatmap of fictional sector profiles, not real cluster output](docs/illustrative/sector_profile_heatmap.png)
+
+After a real run, `make analyze` creates the empirical plots in `output/figures/`; `make report` includes available plots in `output/report.pdf`. Real findings must come from that run, cite its snapshot month and retain the administrative-baixa caveat. To regenerate **only** these mockups, run `python3 scripts/render_illustrative_charts.py`; this does not download data or run any analysis.
 
 ## Privacy and responsible use
 
