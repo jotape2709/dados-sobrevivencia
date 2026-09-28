@@ -137,4 +137,4 @@ As conclusões são intencionalmente derivadas dos valores desta execução e n�
 
 # Reprodutibilidade
 
-Código, comandos, layout oficial, modelo de dados e instruções Power BI estão no repositório. Reexecute `make download`, `make db-up`, `make load`, `make analyze` e `make report` para regenerar este PDF a partir de um snapshot novo. Consulte `docs/methodology.md` antes de interpretar os parâmetros.
+Código, comandos, layout oficial e modelo de dados estão no repositório. Reexecute `make download`, `make db-up`, `make load`, `make analyze` e `make report` para regenerar este PDF a partir de um snapshot novo. Consulte `docs/methodology.md` antes de interpretar os parâmetros.

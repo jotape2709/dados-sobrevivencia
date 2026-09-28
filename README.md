@@ -1,6 +1,6 @@
 # Business Survival and Segmentation in Brazil's ABC Region
 
-A reproducible, **local data-engineering and statistical-analysis project** using the Brazilian Federal Revenue Service (Receita Federal do Brasil, RFB) public CNPJ register. This is **not a website or web application**: it consists of shell/Python ingestion scripts, PostgreSQL, R analysis and PDF reporting, plus Power BI connection assets.
+A reproducible, **local data-engineering and statistical-analysis project** using the Brazilian Federal Revenue Service (Receita Federal do Brasil, RFB) public CNPJ register. This is **not a website or web application**: it consists of shell/Python ingestion scripts, PostgreSQL, R analyses and an R Markdown report rendered to PDF.
 
 The question is: **How long do micro and small businesses headquartered in the ABC region remain registered, which characteristics are associated with a higher administrative-closure hazard, and what descriptive business profiles can be found?**
 
@@ -18,12 +18,11 @@ The question is: **How long do micro and small businesses headquartered in the A
 | `sql/002_transform.sql` | Validates dates, maps Receita's municipality codes by normalized official name, and creates one record per CNPJ basic (head office). |
 | `R/01_analysis.R` | Exploratory summaries, data-quality checks, Kaplan–Meier, Cox, two-year logistic regression and CNAE-division clustering. |
 | `R/02_report.Rmd` | Portuguese report template rendered to PDF from actual generated tables and figures. |
-| `powerbi/` | Power Query (M), DAX measure examples and a step-by-step desktop report specification. |
 | `docs/methodology.md` | Cohort, outcome, censoring, estimands, data caveats and privacy choices. |
 | `docs/architecture.mmd` | Editable Mermaid pipeline diagram. |
 | `tests/` | Unit tests for archive discovery and selection rules; no fake business observations. |
 
-The project intentionally does **not** commit the multi-gigabyte source files, extracts, credentials, company-level exports, fabricated charts, or fabricated findings. It also does not include a `.pbix` file: Power BI Desktop is a Windows desktop product and is not available in this Linux build environment. Instead, the repository contains the real PostgreSQL connection query, DAX measures, and an exact report build guide for Power BI Desktop.
+The project intentionally does **not** commit the multi-gigabyte source files, extracts, credentials, company-level exports, fabricated charts, or fabricated findings. It does not contain an interactive dashboard; this is a local analysis pipeline and PDF-report project, not a website.
 
 ## Scope and statistical unit
 
@@ -34,7 +33,7 @@ The project intentionally does **not** commit the multi-gigabyte source files, e
 
 ## Pipeline diagram
 
-![Data pipeline from the official RFB archive through PostgreSQL and R analysis to the PDF report and Power BI](docs/architecture.png)
+![Data pipeline from the official RFB archive through PostgreSQL and R analysis to the PDF report](docs/architecture.png)
 
 The editable Mermaid source is [`docs/architecture.mmd`](docs/architecture.mmd).
 
@@ -54,7 +53,7 @@ The archive month is stored in `data/raw/manifest.json`. By default, its last ca
 
 - Linux, macOS or WSL shell with `bash`, `wget`, `unzip`, Python 3.10+, GNU `make`, Git and internet access to the official RFB source.
 - Docker Engine + Docker Compose v2 (or an independently managed PostgreSQL 16 database with permission to create schemas and the `unaccent` extension).
-- R (4.3 or newer recommended). Power BI Desktop is optional and only needed for the final desktop report.
+- R (4.3 or newer recommended).
 - **Disk:** budget at least 100 GB free for the compressed archives, CSV extracts and PostgreSQL working/index space; actual requirements vary by monthly release. Keep the machine plugged in and avoid running competing disk-heavy jobs.
 - For PDF output, the R package `tinytex` and its LaTeX distribution, or another TeX installation with `xelatex`.
 
@@ -96,7 +95,7 @@ make report         # output/report.pdf
 
 ## Outputs
 
-After a complete real-data run, `output/tables/` contains data-quality counts, year/city/CNAE summaries, HR/OR tables (or explicit `*_not_estimated.txt` explanations), clustering diagnostics and compact dashboard metrics. `output/figures/` contains annual, municipal, survival and cluster plots. `output/report.pdf` assembles them. No statistical conclusions are bundled before that run: the published source snapshot must determine every number and claim.
+After a complete real-data run, `output/tables/` contains data-quality counts, year/city/CNAE summaries, HR/OR tables (or explicit `*_not_estimated.txt` explanations), clustering diagnostics and compact summary metrics. `output/figures/` contains annual, municipal, survival and cluster plots. `output/report.pdf` assembles them. No statistical conclusions are bundled before that run: the published source snapshot must determine every number and claim.
 
 ### Reading the models responsibly
 
@@ -105,6 +104,12 @@ After a complete real-data run, `output/tables/` contains data-quality counts, y
 - **Two-year logistic model:** labels a registry baixa by day 730. Only businesses with a full 730-day window before the cutoff are eligible; odds ratios (ORs) are not risk ratios. Sparse or single-class outcomes are reported as not estimated.
 - **Clustering:** groups CNAE two-digit divisions after a minimum-size and completeness rule, standardizes four aggregates, compares k-means with a Ward.D2 hierarchical solution, and uses silhouette plus an elbow diagnostic. Clusters are descriptive and sensitive to definitions; they are not individual risk scores.
 - Missing/unparseable opening dates, invalid event dates and negative durations are surfaced and excluded from affected time-to-event models rather than silently repaired. Missing CNAE/MEI values remain visible in quality reporting.
+
+## Charts and dashboard status
+
+There is **no interactive dashboard** in this project. The analysis code is designed to create data plots after a genuine RFB snapshot has been downloaded, loaded and validated. No analytical charts were generated for this delivery because the full national source dump was not downloaded or processed; inserting chart images now would mean inventing or simulating results. The architecture diagram above is the only image currently embedded in this README, and it is not a statistical chart.
+
+After a real run, `make analyze` can create `output/figures/openings_closures_by_year.png`, `businesses_by_municipality.png`, Kaplan–Meier curves by MEI and CNAE division, and clustering diagnostics. Available figures are included automatically in `output/report.pdf` by `make report`. Only publish a chart with its snapshot month and the administrative-baixa caveat; never substitute an uncensored cross-sectional rate for a survival curve.
 
 ## Privacy and responsible use
 
@@ -124,7 +129,7 @@ A Portuguese copy-ready framework, intentionally containing no invented statisti
 
 ## Validation and known environment constraints
 
-The repository's automated unit tests cover archive-index parsing and the explicit no-partners rule; shell scripts are syntax-checked. End-to-end database load, statistical estimation, PDF output, and Power BI refresh require the real full-size monthly dump and platform dependencies. If no real snapshot has been loaded, the report/analysis intentionally stops rather than making up findings.
+The repository's automated unit tests cover archive-index parsing and the explicit no-partners rule; shell scripts and R sources are syntax-checked. End-to-end database load, statistical estimation, PDF output, and chart generation require the real full-size monthly dump. No real CNPJ snapshot was downloaded or processed for this delivery, so **there are currently no analytical chart images or an interactive dashboard in this repository**. The image above is an architecture diagram, not a data chart. Running `make analyze` on a real snapshot generates PNG plots under `output/figures/`; `make report` includes available plots in the PDF. No findings or placeholder charts have been fabricated.
 
 ## License and attribution
 

@@ -216,7 +216,7 @@ if (nrow(sector_cluster) >= 4) {
              file.path(root, "output/tables/clustering_not_estimated.txt"))
 }
 
-# Persist compact, non-identifying tables for the report/dashboard. Raw company IDs are not exported.
+# Persist compact, non-identifying tables for the report. Raw company IDs are not exported.
 summary_metrics <- tibble::tibble(
   metric = c("snapshot_date", "mpe_head_offices", "observed_admin_closures", "admin_closure_share",
              "mei_share_among_known", "median_observed_duration_years", "mature_2y_cohort_n", "mature_2y_closures"),
