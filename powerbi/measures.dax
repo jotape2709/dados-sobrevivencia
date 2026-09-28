@@ -1,0 +1,75 @@
+// Create these measures on analytics.business_cohort in Power BI Desktop.
+
+Head Offices = DISTINCTCOUNT ( business_cohort[cnpj_basic] )
+
+Administrative Baixas Observed =
+CALCULATE (
+    [Head Offices],
+    business_cohort[is_closed] = TRUE (),
+    NOT ISBLANK ( business_cohort[closed_at] ),
+    business_cohort[closed_at] <= business_cohort[snapshot_date]
+)
+
+Administrative Baixa Share =
+DIVIDE ( [Administrative Baixas Observed], [Head Offices] )
+
+Known MEI Head Offices =
+CALCULATE ( [Head Offices], NOT ISBLANK ( business_cohort[is_mei] ) )
+
+MEI Share (Known Status Denominator) =
+DIVIDE (
+    CALCULATE ( [Head Offices], business_cohort[is_mei] = TRUE () ),
+    [Known MEI Head Offices]
+)
+
+Unknown MEI Status =
+CALCULATE ( [Head Offices], ISBLANK ( business_cohort[is_mei] ) )
+
+Median Observed Duration (Days) =
+MEDIANX (
+    FILTER (
+        business_cohort,
+        NOT ISBLANK ( business_cohort[opened_at] )
+            && business_cohort[opened_at] <= business_cohort[snapshot_date]
+            && ( ISBLANK ( business_cohort[closed_at] )
+                 || business_cohort[closed_at] >= business_cohort[opened_at] )
+    ),
+    DATEDIFF (
+        business_cohort[opened_at],
+        COALESCE ( business_cohort[closed_at], business_cohort[snapshot_date] ),
+        DAY
+    )
+)
+
+Mature Cohort (730 Days) =
+CALCULATE (
+    [Head Offices],
+    FILTER (
+        business_cohort,
+        NOT ISBLANK ( business_cohort[opened_at] )
+            && business_cohort[opened_at] <= business_cohort[snapshot_date] - 730
+    )
+)
+
+Administrative Baixa Within 730 Days (Mature Cohort) =
+CALCULATE (
+    [Head Offices],
+    FILTER (
+        business_cohort,
+        NOT ISBLANK ( business_cohort[opened_at] )
+            && business_cohort[opened_at] <= business_cohort[snapshot_date] - 730
+            && business_cohort[is_closed] = TRUE ()
+            && NOT ISBLANK ( business_cohort[closed_at] )
+            && business_cohort[closed_at] <= business_cohort[opened_at] + 730
+    )
+)
+
+Administrative Baixa Within 730 Days Share (Mature Cohort) =
+DIVIDE (
+    [Administrative Baixa Within 730 Days (Mature Cohort)],
+    [Mature Cohort (730 Days)]
+)
+
+Snapshot Date = MAX ( business_cohort[snapshot_date] )
+
+// Caution: these measures describe registry records. They do not measure bankruptcy or causal risk.

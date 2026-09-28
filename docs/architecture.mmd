@@ -1,0 +1,15 @@
+flowchart TB
+    A[Official RFB CNPJ monthly archive] --> B[Discover month and partitions]
+    B --> C[Download Companies / Establishments / Simples / CNAE / Municipalities]
+    B -. never selected .-> X[Partners / Socios]
+    C --> D[Unzip and SHA-256 manifest]
+    D --> E[PostgreSQL raw and reference schemas]
+    E --> F[SQL date validation and ABC head-office MPE cohort]
+    F --> G[analytics.business_cohort<br/>one row per CNPJ basic]
+    G --> H[Exploration and quality checks in R]
+    H --> I[Kaplan-Meier / Cox / 730-day logistic]
+    H --> J[Standardized CNAE-division clustering]
+    I --> K[CSV tables and PNG figures]
+    J --> K
+    K --> L[R Markdown report to PDF]
+    G --> M[Power BI Desktop connected to PostgreSQL]

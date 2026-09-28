@@ -1,0 +1,140 @@
+---
+title: "Sobrevivência e segmentação de pequenas empresas no ABC"
+author: "Projeto de dados abertos — Receita Federal do Brasil"
+date: "`r Sys.Date()`"
+lang: pt-BR
+output:
+  pdf_document:
+    toc: true
+    number_sections: true
+    latex_engine: xelatex
+    fig_caption: true
+geometry: margin=2.3cm
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE,
+                      fig.align = "center", out.width = "95%")
+repo_root <- normalizePath("..", mustWork = TRUE)
+knitr::opts_knit$set(root.dir = repo_root)
+if (!dir.exists(file.path(repo_root, "output/tables"))) stop("Run `make analyze` after loading a real RFB snapshot.")
+read_tbl <- function(name) {
+  path <- file.path(repo_root, "output/tables", name)
+  if (!file.exists(path)) stop("Required result not found: ", path, ". Run `make analyze` first.")
+  readr::read_csv(path, show_col_types = FALSE)
+}
+metrics <- read_tbl("summary_metrics.csv")
+quality <- read_tbl("data_quality.csv")
+annual <- read_tbl("annual_openings_closures.csv")
+cities <- read_tbl("municipality_summary.csv")
+sectors <- read_tbl("sector_summary.csv")
+metric <- function(name) metrics$value[match(name, metrics$metric)]
+```
+
+# Resumo executivo
+
+Este documento descreve **matrizes de micro e pequenas empresas (ME/EPP)** com sede cadastral em um dos sete municípios do ABC Paulista. A unidade estatística é o CNPJ básico (uma linha por pessoa jurídica). O período de referência desta extração é **`r metric("snapshot_date")`**.
+
+A análise usa a baixa cadastral como evento observado e considera registros ainda não baixados como censurados na data de referência. **Baixa administrativa não equivale a falência, insolvência ou encerramento econômico comprovado.** Este relatório não contém resultados enquanto a extração oficial e as etapas de processamento não forem executadas.
+
+Cohort elegível: **`r metric("mpe_head_offices")`** registros utilizáveis após validação temporal. Baixas administrativas observadas: **`r metric("observed_admin_closures")`**. Estes valores são calculados do snapshot real carregado, não são números de exemplo.
+
+# Dados e critérios
+
+Fonte primária: [Dados Abertos do Cadastro Nacional da Pessoa Jurídica — Receita Federal](https://www.gov.br/receitafederal/pt-br/acesso-a-informacao/dados-abertos/cadastros/cnpj). O processo de extração grava versão, data de referência e hashes dos ZIPs em `data/raw/manifest.json`.
+
+- Municípios: Santo André, São Bernardo do Campo, São Caetano do Sul, Diadema, Mauá, Ribeirão Pires e Rio Grande da Serra.
+- Geografia: matriz (`CNPJ ordem = 0001`) localizada no município; filiais não são contadas como empresas independentes.
+- Porte: ME (`01`) e EPP (`03`) conforme o campo de porte da Receita. MEI é medido como atributo do Simples e não presumido pelo porte.
+- Evento: situação cadastral “baixada” (`08`) e data válida de baixa. Outras situações são censuradas na data de referência.
+- Identificadores são tratados como texto, sem remover zeros à esquerda, para suportar CNPJs alfanuméricos atribuídos a novas inscrições desde julho de 2026.
+
+# Qualidade dos dados
+
+```{r quality-table}
+knitr::kable(quality, caption = "Verificações de consistência e dimensão dos dados")
+```
+
+Datas fora do calendário, datas de abertura posteriores ao snapshot, durações negativas, baixa sem data válida e campos ausentes são reportados. Observações temporais inválidas são excluídas dos modelos de sobrevivência; CNAE ausente não é inventado.
+
+# Aberturas, baixas e municípios
+
+```{r annual-chart, out.width="95%"}
+p <- "output/figures/openings_closures_by_year.png"
+if (file.exists(p)) knitr::include_graphics(p) else cat("Gráfico indisponível: verifique `make analyze`.")
+```
+
+```{r municipality-table}
+knitr::kable(cities, digits = 3, caption = "Comparação descritiva por município; percentuais calculados sobre o cohort cadastral.")
+```
+
+A participação de registros com MEI desconhecido é preservada nos controles de qualidade. Proporções descritivas não são taxas causais de encerramento e variam conforme a data de extração.
+
+# Sobrevivência
+
+O tempo observado é a diferença entre início de atividade e baixa; empresas sem baixa válida são censuradas na referência mensal. Kaplan–Meier resume a probabilidade de permanecer sem baixa cadastral. As curvas representam sobrevivência cadastral, **não** sobrevivência econômica.
+
+```{r km-sector, out.width="95%"}
+p <- "output/figures/survival_by_sector.png"
+if (file.exists(p)) knitr::include_graphics(p) else cat("Curva por divisão CNAE indisponível (eventos/grupos insuficientes ou `make analyze` pendente).")
+```
+
+```{r km-mei, out.width="95%"}
+p <- "output/figures/survival_by_mei.png"
+if (file.exists(p)) knitr::include_graphics(p) else cat("Curva por condição MEI indisponível (eventos insuficientes ou `make analyze` pendente).")
+```
+
+Divisão CNAE é indicada pelo prefixo de dois dígitos do CNAE fiscal principal. Regime MEI é variável cadastral observada; casos sem informação não são reclassificados.
+
+# Modelos
+
+## Cox
+
+O modelo de riscos proporcionais estima razões de hazard (HR) associadas a divisão CNAE, MEI, município, porte e log do capital social. HR acima de 1 significa maior hazard **de baixa cadastral** relativamente à categoria de referência, condicionada às variáveis incluídas — não é uma explicação causal. O diagnóstico de riscos proporcionais é salvo em `output/tables/cox_ph_assumption.txt`.
+
+```{r cox-table}
+p <- "output/tables/cox_hazard_ratios.csv"
+if (file.exists(p)) knitr::kable(readr::read_csv(p, show_col_types = FALSE), digits = 3,
+  caption = "HR e intervalos de confiança de 95%; interpretados como associações cadastrais.") else cat("Cox não estimado: insuficiência de eventos/registros ou etapa de análise ainda não executada. Consulte o arquivo *_not_estimated.txt.")
+```
+
+## Logística: baixa observada até dois anos
+
+A regressão logística inclui apenas empresas com **730 dias completos de observação** antes da referência, evitando classificar recém-abertas como não encerradas antes do desfecho ser observável. OR é uma razão de odds, não risco relativo.
+
+```{r logit-table}
+p <- "output/tables/logistic_2y_odds_ratios.csv"
+if (file.exists(p)) knitr::kable(readr::read_csv(p, show_col_types = FALSE), digits = 3,
+  caption = "OR e IC95% para baixa cadastral observada nos primeiros 730 dias.") else cat("Regressão logística não estimada: coorte madura insuficiente ou apenas uma classe de desfecho. Consulte o arquivo *_not_estimated.txt.")
+```
+
+# Perfis de atividade e clusters
+
+A clusterização é realizada sobre divisões CNAE que atendem aos critérios mínimos de cobertura, usando proporção MEI, baixa em dois anos entre coortes maduras, idade média e log do capital. Variáveis são padronizadas. k é comparado por soma intragrupo (cotovelo) e silhueta média; Ward.D2 oferece comparação hierárquica. São perfis descritivos sensíveis ao corte, não segmentos “naturais” nem previsão individual.
+
+```{r clusters, out.width="95%"}
+p <- "output/figures/clustering_silhouette.png"
+if (file.exists(p)) knitr::include_graphics(p) else cat("Clusters não estimados; consulte output/tables/clustering_not_estimated.txt.")
+```
+
+```{r sectors}
+knitr::kable(utils::head(sectors, 15), digits = 3, caption = "Divisões CNAE com maior presença no cohort")
+```
+
+# Conclusões para decisão
+
+As conclusões são intencionalmente derivadas dos valores desta execução e não pré-preenchidas. Para comunicação pública, selecione conclusões sustentadas pelas tabelas, inclua a data da extração e reporte a natureza administrativa do desfecho. O README contém roteiro para converter esses outputs em três achados executivos; este template não fabrica narrativa nem gráficos.
+
+# Limitações
+
+1. Baixa cadastral pode decorrer de atualização administrativa, cancelamento ou outra razão e não equivale a falência; inclusive há cancelamentos administrativos em lote de MEI inadimplente.
+2. A coorte é de matrizes MPE na região. Empresas cuja matriz esteja fora do ABC, mesmo com filiais locais, ficam fora; baixas de filiais não são eventos independentes.
+3. A base é uma fotografia mensal cadastral e pode ter atraso, revisão retroativa e inconsistências. Censura pressupõe que o tempo observado seja adequado; censura informativa pode enviesar Kaplan–Meier/Cox.
+4. Capital social cadastrado não é receita, caixa ou patrimônio líquido. MEI/Simples no snapshot não prova regime contínuo durante toda a vida da empresa.
+5. Cox exige riscos proporcionais e observações independentes; associação transversal não identifica efeito causal. A logística usa desfecho em 730 dias apenas quando essa janela é observável.
+6. Clusters dependem das variáveis, escala, filtros e número de divisões CNAE, não devem ser usados como rótulos permanentes.
+7. O estudo exclui deliberadamente o arquivo de Sócios. Não se processam nomes de sócios nem CPF parcialmente mascarado; o pipeline não necessita desses dados.
+
+# Reprodutibilidade
+
+Código, comandos, layout oficial, modelo de dados e instruções Power BI estão no repositório. Reexecute `make download`, `make db-up`, `make load`, `make analyze` e `make report` para regenerar este PDF a partir de um snapshot novo. Consulte `docs/methodology.md` antes de interpretar os parâmetros.
