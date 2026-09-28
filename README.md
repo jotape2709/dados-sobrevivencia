@@ -106,10 +106,6 @@ After a complete real-data run, `output/tables/` contains data-quality counts, y
 - **Clustering:** groups CNAE two-digit divisions after a minimum-size and completeness rule, standardizes four aggregates, compares k-means with a Ward.D2 hierarchical solution, and uses silhouette plus an elbow diagnostic. Clusters are descriptive and sensitive to definitions; they are not individual risk scores.
 - Missing/unparseable opening dates, invalid event dates and negative durations are surfaced and excluded from affected time-to-event models rather than silently repaired. Missing CNAE/MEI values remain visible in quality reporting.
 
-## Power BI (desktop, connected to PostgreSQL)
-
-Power BI Desktop is not installed in the Linux environment used to prepare this repository, so no `.pbix` binary is claimed. Open `powerbi/DASHBOARD.md` for the exact connection, M query, DAX measures, page layout and refresh instructions. The query reads only the analysis-ready `analytics.business_cohort` table; it does not expose raw contact fields or the Sócios file. Use PostgreSQL credentials with read-only access for Power BI where practical.
-
 ## Privacy and responsible use
 
 The pipeline never discovers, downloads, loads or joins `Socios*.zip`; that file is unnecessary for the research question and contains names and partially masked personal identifiers. The analysis table excludes personal names, addresses, phone numbers, email and partner fields. The public business-register fields are still subject to responsible use: do not infer personal traits, republish an identifiable risk ranking, or treat registry status as a credit/eligibility decision. Keep `.env`, raw source files and any row-level exports out of Git and shared folders. The public CNPJ dataset's license and agency terms govern downstream use.
